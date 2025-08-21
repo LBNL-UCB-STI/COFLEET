@@ -7,8 +7,8 @@
 <p> <b>Updates (June 11, 2025)</b>: code uploaded, cleaned and data uploaded </p>
 
 ## Data preparation before start ##
-<p> Dataset can be downloaded here: https://doi.org/10.5281/zenodo.15643435 </p>
-<p> Check all the file directories and names under [config file](configs.py)
+* Dataset can be downloaded here: https://doi.org/10.5281/zenodo.15643435
+* Check all the file directories and names under [configs](configs.py)
 
 ## Part 1 -- VIUS data cleaning and vehicle type assignment ##
 * Corresponding to Section 2.1 of the paper
