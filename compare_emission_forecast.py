@@ -12,12 +12,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import configs as cf
 
 import warnings
 warnings.filterwarnings("ignore")
 
 # set project path
-path_to_data = '/Users/xiaodanxu/Library/CloudStorage/GoogleDrive-arielinseu@gmail.com/My Drive/BEAM-CORE/SynthFirm/Release/VIUS_Fleet_and_Emission' 
+path_to_data = cf.proj_path
 # please change this to the local directory where the data folder is located
 os.chdir(path_to_data)
 
@@ -54,17 +55,20 @@ age_bin = [-1, 3, 5, 7, 9, 14, 19, 31]
 age_bin_label = ['age<=3', '3<age<=5','5<age<=7', 
                  '7<age<=9', '9<age<=14', '14<age<=19', 'age>=20']
 
+pol_to_plot = ['Energy use', 'CO_2e','NO_x', 'PM_2.5']
 
-path_to_moves = 'Parameter'
-path_to_vius = 'Input'
-path_to_plot = 'Plot'
+avft_order = ['MOVES default', 'TITAN high oil, low elec',
+      'TITAN high oil, mid elec',  'TITAN high oil, high elec',
+      'TITAN low oil, low elec',
+       'TITAN low oil, mid elec', 'TITAN low oil, high elec']
+
+path_to_plot = cf.plot_dir
+joint_future_vmt_by_fuel_file = cf.joint_future_vmt_by_fuel_file
+er_file_head = cf.er_file_head
+moves_definition_file = cf.moves_definition_file
 
 # load VMT distribution
-vmt_distribution = read_csv(os.path.join(path_to_moves, 'turnover', 
-                                         'vmt_distribution_by_scenario.csv'))
-to_drop = ['MOVES retiring old trucks', 'VIUS retiring old trucks']
-vmt_distribution = \
-    vmt_distribution[~vmt_distribution['scenario'].isin(to_drop)]
+vmt_distribution = read_csv(joint_future_vmt_by_fuel_file)
     
 vmt_distribution.loc[:, 'AgeBin'] = pd.cut(vmt_distribution['ageID'],
                                       bins=age_bin, 
@@ -72,13 +76,12 @@ vmt_distribution.loc[:, 'AgeBin'] = pd.cut(vmt_distribution['ageID'],
 
 vmt_distribution = vmt_distribution.loc[vmt_distribution['yearID'].isin(analysis_years)]
 
-# <codecell>
 
 # prepare speed distribution
 
-road_type_distribution = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+road_type_distribution = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'road_type_distribution')
-speed_distribution = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+speed_distribution = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'speed_distribution')
 hourDayID = 85 # weekday hour = 8
 selected_type = [32, 52, 53, 61, 62]
@@ -123,10 +126,8 @@ combined_moveser = None
 pollutants = list(pollutant_lookup.keys())
 for year in analysis_years:
     print(year)
-    er_file = 'Seattle_MOVES4_emission_rate_per_mile_' + str(year) + '.csv'
-    moveser_dir = os.path.join(path_to_vius, er_file)
+    moveser_dir = er_file_head + str(year) + '.csv'
     moveser = read_csv(moveser_dir)
-
 
     moveser = \
     moveser.loc[moveser['pollutantID'].isin(pollutants)]
@@ -141,7 +142,7 @@ for year in analysis_years:
     combined_moveser = pd.concat([combined_moveser, moveser])
     # break
 
-# <codecell>
+
 
 # redistribute VMT fraction among HPMS class
 
@@ -212,15 +213,12 @@ emission_rate_by_scenario = emission_rate_by_scenario.reset_index()
 # <codecell>
 
 # plot emission rate by scenario
-pol_to_plot = ['Energy use', 'CO_2e','NO_x', 'PM_2.5']
+
 emission_rate_to_plot = \
     emission_rate_by_scenario.loc[emission_rate_by_scenario['pollutant'].isin(pol_to_plot)]
 # emission_rate_to_plot = \
 # emission_rate_to_plot.loc[emission_rate_to_plot['yearID']>=2030]    
-color_order = ['MOVES default', 'TITAN high oil, low elec',
-      'TITAN high oil, mid elec',  'TITAN high oil, high elec',
-      'TITAN low oil, low elec',
-       'TITAN low oil, mid elec', 'TITAN low oil, high elec']
+
 
 for pol in pol_to_plot:  
     emission_rate_sel = \
@@ -228,7 +226,7 @@ for pol in pol_to_plot:
     ax = sns.relplot(emission_rate_sel, x = 'yearID', y = 'emissions',
                 hue = 'avft_scenario', style = 'scenario', 
                 col = 'HPMSVtypeName', 
-                kind="line", palette = 'rainbow_r', hue_order = color_order,
+                kind="line", palette = 'rainbow_r', hue_order = avft_order,
                 linewidth = 1,
                 facet_kws={'sharey': False})
     
@@ -254,7 +252,7 @@ for pol in pol_to_plot:
     # emission_rate_sel = emission_rate_sel.loc[emission_rate_sel['HPMSVtypeID'] > 25]
     ax = sns.catplot(emission_rate_sel, x = 'scenario', y = 'emissions',
                 hue = 'avft_scenario', col = 'HPMSVtypeName', 
-                kind="bar", palette = 'rainbow_r', hue_order = color_order,
+                kind="bar", palette = 'rainbow_r', hue_order = avft_order,
                 height=4, aspect=1.05)
                 # facet_kws={'sharey': False})
     
@@ -297,7 +295,7 @@ for pol in pol_to_plot:
             emission_rate_sel.loc[:, 'base_emissions'] - 1
     ax = sns.catplot(emission_rate_sel, x = 'scenario', y = 'change',
                 hue = 'avft_scenario', col = 'HPMSVtypeName', 
-                kind="bar", palette = 'rainbow_r', hue_order = color_order,
+                kind="bar", palette = 'rainbow_r', hue_order = avft_order,
                 height=4, aspect=1.05)
                 # facet_kws={'sharey': False})
     
@@ -315,4 +313,3 @@ for pol in pol_to_plot:
                 bbox_inches='tight', dpi = 300)
     plt.show()
     
-    # break

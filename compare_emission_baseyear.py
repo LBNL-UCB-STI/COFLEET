@@ -12,19 +12,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import configs as cf
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
-path_to_data = '/Users/xiaodanxu/Library/CloudStorage/GoogleDrive-arielinseu@gmail.com/My Drive/BEAM-CORE/SynthFirm/Release/VIUS_Fleet_and_Emission' 
+path_to_data = cf.proj_path
 # please change this to the local directory where the data folder is located
 os.chdir(path_to_data)
 
 
-# load input
-
-
+### load input ### and parameters
 
 # define constant
 pollutant_lookup = {91: 'Energy use', 98: 'CO_2e',
@@ -49,26 +48,24 @@ list_of_pollutant = ['Energy use', 'CO_2e',
                     'CO', 'NO_x', 'NH_3', 'SO_2', 
                     'NO_2', 'VOC', 'PM_2.5', 'PM_10']
 
-# hpms_veh_lookup = {62: 'combination truck',
-#                    61: 'combination truck',
-#                    52: 'single-unit truck',
-#                    53: 'single-unit truck',
-#                    32:  'light commercial truck'}
+
 
 age_bin = [-1, 3, 5, 7, 9, 14, 19, 31]
 
 age_bin_label = ['age<=3', '3<age<=5','5<age<=7', 
                  '7<age<=9', '9<age<=14', '14<age<=19', 'age>=20']
 
-path_to_moves = 'Parameter'
-path_to_vius = 'Input'
-path_to_plot = 'Plot'
+
 analysis_year = 2021
 
+er_file_head = cf.er_file_head
+moveser_dir = er_file_head + str(analysis_year) + '.csv'
+moves_data_path = cf.moves_base_vmt_by_fuel_file
+vius_data_path = cf.vius_base_vmt_by_fuel_file
+moves_definition_file = cf.moves_definition_file
+path_to_plot = cf.plot_dir
 
 # 1. Emission rate
-
-moveser_dir = os.path.join(path_to_vius, 'Seattle_MOVES4_emission_rate_per_mile_2021.csv')
 moveser_baseline = read_csv(moveser_dir)
 
 pollutants = list(pollutant_lookup.keys())
@@ -85,15 +82,15 @@ moveser_baseline.loc[:, 'pollutantID'].map(pollutant_lookup)
 # 2. fleet data
 
 # load MOVES data
-MOVES_data_path = os.path.join(path_to_moves, 'MOVES_VMT_fraction_with_fuel_com_only.csv')
-MOVES_fleet = read_csv(MOVES_data_path)
+
+MOVES_fleet = read_csv(moves_data_path)
 MOVES_fleet.loc[:, 'AgeBin'] = pd.cut(MOVES_fleet['ageID'],
                                       bins=age_bin, 
                                       right=True, labels=age_bin_label)
 print(MOVES_fleet.columns)
 
 # load vius data
-vius_data_path = os.path.join(path_to_vius, 'VIUS_VMT_fraction_with_fuel_com_only.csv')
+
 vius_fleet = read_csv(vius_data_path)
 vius_fleet.loc[:, 'AgeBin'] = pd.cut(vius_fleet['ageID'],
                                       bins=age_bin, 
@@ -101,25 +98,23 @@ vius_fleet.loc[:, 'AgeBin'] = pd.cut(vius_fleet['ageID'],
 vius_fleet.head(5)
 
 # 3. other distribution
-road_type_distribution = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+road_type_distribution = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'road_type_distribution')
-speed_distribution = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+speed_distribution = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'speed_distribution')
 
-
 # 4. load variable definition
-source_type_definition = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+source_type_definition = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'source_type_HPMS')
 
-speed_bin_definition = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+speed_bin_definition = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'speed_bin_definition')
-
 
 # filter non-name attributes
 speed_bin_definition = \
     speed_bin_definition[['avgSpeedBinID', 'avgBinSpeed', 'avgSpeedBinDesc']]
     
-HPMS_definition = pd.read_excel(os.path.join(path_to_moves, 'moves_definition.xlsx'), 
+HPMS_definition = pd.read_excel(moves_definition_file, 
                                 sheet_name = 'HPMS_definition')
 vius_fleet = pd.merge(vius_fleet, source_type_definition,
                       on = 'sourceTypeID', how = 'left')
